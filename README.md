@@ -1,139 +1,113 @@
-# Flowchart-Generator
-Automatically creates Flowcharts from Pseudocode!
-<img src="flowchart.png" width="629" height="500">
+BEGIN Motor Thermal Simulation Program
 
-## Video Demo
+    // Constants
+    DEFINE DEFAULT_MOTOR_EFFICIENCY = 0.85
+    DEFINE DEFAULT_HEAT_TRANSFER_COEFFICIENT = 15.0
+    DEFINE DEFAULT_SURFACE_AREA = 0.2
+    DEFINE DEFAULT_MASS = 5.0
+    DEFINE DEFAULT_SPECIFIC_HEAT_CAPACITY = 450.0
+    DEFINE DEFAULT_LOSS_COEFFICIENT = 2.0
+    DEFINE DEFAULT_SAFE_TEMP_THRESHOLD = 80.0
+    DEFINE DEFAULT_WARNING_TEMP_THRESHOLD = 70.0
+    DEFINE DEFAULT_POWER_REDUCTION_FACTOR = 0.5
+    DEFINE DEFAULT_SIMULATION_DURATION = 100
+    DEFINE DEFAULT_TIME_STEP = 1
+    DEFINE DEFAULT_INITIAL_TEMP = 25
+    DEFINE DEFAULT_AMBIENT_TEMP = 20.0
 
-https://www.youtube.com/watch?v=1gCqPBzU8Z0
+    // Function to calculate heat generation
+    FUNCTION calculate_heat_generation(power_input, efficiency, time_step)
+        RETURN (1 - efficiency) * power_input * time_step
+    END FUNCTION
 
+    // Function to calculate heat loss
+    FUNCTION calculate_heat_loss(temperature, ambient_temperature, heat_transfer_coeff, surface_area, loss_coeff, time_step)
+        RETURN (heat_transfer_coeff * surface_area + loss_coeff) * (temperature - ambient_temperature) * time_step
+    END FUNCTION
 
-## Installing through Repl.it
+    // Function to calculate temperature change
+    FUNCTION calculate_temperature_change(net_heat, mass, specific_heat)
+        IF mass <= 0 OR specific_heat <= 0 THEN
+            RETURN 0
+        END IF
+        RETURN net_heat / (mass * specific_heat)
+    END FUNCTION
 
-If you don't want to download this or setup python, you can run this project directly from your browser with [repl.it](https://repl.it/github/MugilanGN/Flowchart-Generator)
+    // Function to predict next temperature
+    FUNCTION predict_next_temperature(current_temperature, delta_temperature)
+        RETURN current_temperature + delta_temperature
+    END FUNCTION
 
-This link will automatically clone the project and set it up for you. If you want to do it manually, you can import **github.com/MugilanGN/Flowchart-Generator** into repl.it yourself.
+    // Function to get motor status
+    FUNCTION get_motor_status(temperature, warning_threshold, safe_threshold)
+        IF temperature > safe_threshold THEN
+            RETURN "Shutdown"
+        ELSE IF temperature >= warning_threshold THEN
+            RETURN "Warning"
+        ELSE
+            RETURN "Normal"
+        END IF
+    END FUNCTION
 
-From here onwards, you can edit the enter.txt file in the repl project and replace it with your own custom pseudocode.
+    // Function to apply control action
+    FUNCTION apply_control_action(status, power_input, power_reduction_factor)
+        IF status == "Warning" THEN
+            RETURN power_input * power_reduction_factor
+        ELSE IF status == "Shutdown" THEN
+            RETURN 0.0
+        ELSE
+            RETURN power_input
+        END IF
+    END FUNCTION
 
-Once you are done, you can run the commands from the [CLI Usage](#cli-usage) section of the README in the repl.it terminal.
+    // Function to simulate motor temperature
+    FUNCTION simulate_motor_temperature(initial_temperature, ambient_temperature, motor_efficiency, heat_transfer_coefficient, surface_area, mass, specific_heat_capacity, loss_coefficient, time_step, simulation_duration, power_profile)
+        INITIALIZE time_points, temperatures, power_inputs, motor_status_list, actions_taken
+        SET current_temperature = initial_temperature
+        SET time_elapsed = 0.0
+        SET power_index = 0
+        SET num_steps = simulation_duration / time_step
 
-## Local Installation
+        FOR i FROM 0 TO num_steps - 1 DO
+            IF power_profile IS NULL THEN
+                SET current_power_input = 100.0
+            ELSE IF power_index < LENGTH(power_profile) THEN
+                SET current_power_input = power_profile[power_index]
+                INCREMENT power_index
+            ELSE
+                SET current_power_input = power_profile[LAST_INDEX]
+            END IF
 
-This project was built on Python 3.7.4
+            SET heat_generated = calculate_heat_generation(current_power_input, motor_efficiency, time_step)
+            SET heat_lost = calculate_heat_loss(current_temperature, ambient_temperature, heat_transfer_coefficient, surface_area, loss_coefficient, time_step)
+            SET net_heat = heat_generated - heat_lost
+            SET delta_temperature = calculate_temperature_change(net_heat, mass, specific_heat_capacity)
+            SET current_temperature = predict_next_temperature(current_temperature, delta_temperature)
 
-Run this to install the necessary dependencies:
+            SET status = get_motor_status(current_temperature, DEFAULT_WARNING_TEMP_THRESHOLD, DEFAULT_SAFE_TEMP_THRESHOLD)
+            SET current_power_input = apply_control_action(status, current_power_input, DEFAULT_POWER_REDUCTION_FACTOR)
 
-```sh 
-pip install Pillow==9.0.0 click
-```
+            // Track action based on motor status
+            IF status == "Warning" THEN
+                APPEND "Power Reduced" TO actions_taken
+            ELSE IF status == "Shutdown" THEN
+                APPEND "Motor Shut Down" TO actions_taken
+            ELSE
+                APPEND "No Action" TO actions_taken
+            END IF
 
-Next, clone this project onto your system.
+            // Update simulation time
+            time_elapsed += time_step
+            APPEND time_elapsed TO time_points
+            APPEND current_temperature TO temperatures
+            APPEND current_power_input TO power_inputs
+            APPEND status TO motor_status_list
 
-## Writing the Pseudocode
+            // Check for shutdown condition
+            IF status == "Shutdown" THEN
+                PRINT "Motor Shutdown: Temperature exceeded safe threshold. Simulation stopped."
+                BREAK
+            END IF
+        END FOR
 
-The Pseudocode is entered into a .txt file. It follows strict rules which must be obeyed
-
-<img src="enter.png" alt="alt text">
-
-### Rules
-
-STOP and START are automatically input by the program, so do not need to be added
-
-Indents don't affect the program, so nothing has to be indented, and incorrect indentation is allowed
-
-The capitalization of the keywords is extremely important. If an error occurs, double check if you have capitalized the keywords like "TO" and "FOR" properly
-
-ELSE IF is not available, but nested IFs are possible
-
-The ENDIF, NEXT var, and ENDWHILE blocks are mandatory
-
-### Syntax Guide
-
- #### Input and Output:
-
-  - INPUT x 
-  - OUTPUT x
-
-   ```sh
-   INPUT X
-   OUTPUT var
-   OUTPUT "hello"
-   ```
-#### IF statements:
-  - IF condition THEN
-  - ELSE
-  - ENDIF
-  
-  ```sh
-  IF x < 3 THEN
-    OUTPUT X
-  ELSE
-    OUTPUT x*2
-  ENDIF
-  ```
-  The else statement is optional (ENDIF is still necessary)
-  
-   ```sh
-  IF x < 3 THEN
-    OUTPUT X
-  ENDIF
-  ```
-  
-  #### Process-type blocks:
-
-  ```sh
-  x = x + 1
-  y = x / 2
-  ```
-  
-  #### While loops:
-
-  - WHILE condition DO
-  - ENDWHILE
-  
-  ```sh
-  WHILE x < 5 DO
-    OUTPUT x
-  ENDWHILE
-  ```
-  #### For loops:
-   
-  - FOR var <- start TO end
-  - NEXT var
-  
-  ```sh
-  FOR i <- 1 TO 5
-    OUTPUT i
-  NEXT i
-  ```
-
-## CLI usage
-
-To run the code, simply execute the following command:
-```sh
-python Converter.py
-```
-
-### Arguments
-  
-  Arguments in the CLI are typed like so: ```--size=20``` or ```--code="enter.txt"```
- 
-  - ```--size``` is the font size used. This controls the size of the entire flowchart as well. By default it is 20px
-  - ```--font``` is the font path. A default NotoSans font is used at "./fonts/", but can be changed for different OSs or fonts
-  - ```--output``` is the flowchart's image file. Default is "flowchart.png"
-  - ```--code``` is the file with the pseudocode. Defaults to "enter.txt"
-  - ```--help``` provides CLI help
-  
-  For example:
-  
-  ```sh
-  python Converter.py --code="code.txt" --size=30 --output="result.png"
-  ```
-
-### Flowchart Image
-
-This image contains the created flowchart which can be shared, printed, etc. Its size varies exactly on the size of the flowchart created, so it may even hit a resolution of 10k pixels! However if the generated flowchart is too big, then the image will be unopenable due to being too large. The user should be careful with flowchart sizes.
-
-## Support
-
-If you are having issues, please let me know. You can contact me at mugi.ganesan@gmail.com
+        RETURN
